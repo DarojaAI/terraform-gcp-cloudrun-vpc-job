@@ -65,15 +65,16 @@ resource "google_cloud_run_v2_job" "vpc_job" {
   template {
     task_count = var.task_count
 
-    annotations = {
-      "run.googleapis.com/vpc-access-connector" = local.connector_id
-      "run.googleapis.com/vpc-access-egress"    = var.vpc_egress
-    }
-
     # Nested template for container execution
     template {
       timeout          = "${var.timeout_seconds}s"
       service_account  = google_service_account.job_sa.email
+
+      # VPC Access for Cloud Run v2
+      vpc {
+        connector = local.connector_id
+        egress    = var.vpc_egress
+      }
 
       containers {
         image = var.image
@@ -140,4 +141,19 @@ resource "google_secret_manager_secret_iam_member" "job_secrets_access" {
   secret_id = var.secrets[each.value]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.job_sa.email}"
+}
+
+# Also add SA to existing postgres password secret if referenced
+data "google_secret_manager_secret" "postgres_password" {
+  count = var.secrets["POSTGRES_PASSWORD"] != "" ? 1 : 0
+  project = var.project_id
+  secret_id = var.secrets["POSTGRES_PASSWORD"]
+}
+
+resource "google_secret_manager_secret_iam_member" "job_postgres_password_access" {
+  count = var.secrets["POSTGRES_PASSWORD"] != "" ? 1 : 0
+  project = var.project_id
+  secret_id = data.google_secret_manager_secret.postgres_password[0].secret_id
+  role = "roles/secretmanager.secretAccessor"
+  member = "serviceAccount:${google_service_account.job_sa.email}"
 }
