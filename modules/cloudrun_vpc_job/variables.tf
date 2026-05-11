@@ -28,22 +28,14 @@ variable "labels" {
 # VPC Configuration
 # =============================================================================
 
-variable "vpc_connector_name" {
-  description = "VPC Access Connector name (e.g., dev-nexus-prod-connector)"
+variable "vpc_name" {
+  description = "VPC network name (e.g., dev-nexus-prod-vpc)"
   type        = string
-  default     = ""
 }
 
-variable "vpc_connector_id" {
-  description = "Full VPC Access Connector ID (projects/PROJECT/locations/REGION/connectors/NAME). Takes precedence over vpc_connector_name."
+variable "vpc_subnet_name" {
+  description = "VPC subnet name (e.g., dev-nexus-prod-vpc-main)"
   type        = string
-  default     = ""
-}
-
-variable "vpc_egress" {
-  description = "VPC egress mode: private-ranges-only or all-traffic"
-  type        = string
-  default     = "private-ranges-only"
 }
 
 # =============================================================================

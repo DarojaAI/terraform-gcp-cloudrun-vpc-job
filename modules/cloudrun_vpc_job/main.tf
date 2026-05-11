@@ -17,16 +17,18 @@ terraform {
 }
 
 # =============================================================================
-# Data: Lookup existing VPC Access Connector
+# Data: Lookup existing VPC and Subnet
 # =============================================================================
 
-data "google_vpc_access_connector" "existing" {
-  name    = var.vpc_connector_name
+data "google_compute_network" "vpc" {
+  name    = var.vpc_name
   project = var.project_id
 }
 
-locals {
-  connector_id = var.vpc_connector_id != "" ? var.vpc_connector_id : data.google_vpc_access_connector.existing.id
+data "google_compute_subnetwork" "subnet" {
+  name    = var.vpc_subnet_name
+  project = var.project_id
+  region  = var.location
 }
 
 # =============================================================================
@@ -70,10 +72,13 @@ resource "google_cloud_run_v2_job" "vpc_job" {
       timeout          = "${var.timeout_seconds}s"
       service_account  = google_service_account.job_sa.email
 
-      # VPC Access for Cloud Run v2
-      vpc {
-        connector = local.connector_id
-        egress    = var.vpc_egress
+      # VPC access for direct connectivity to PostgreSQL
+      vpc_access {
+        network_interfaces {
+          network    = data.google_compute_network.vpc.name
+          subnetwork = data.google_compute_subnetwork.subnet.name
+        }
+        egress = "PRIVATE_RANGES_ONLY"
       }
 
       containers {
