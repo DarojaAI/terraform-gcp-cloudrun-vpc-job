@@ -21,18 +21,12 @@ terraform {
 # =============================================================================
 
 data "google_vpc_access_connector" "existing" {
-  name     = var.vpc_connector_name != "" ? var.vpc_connector_name : basename(var.vpc_connector_id)
-  project  = var.project_id
-  location = var.location
-
-  # Fallback: derive name from full connector ID
-  count = var.vpc_connector_name != "" ? 1 : (var.vpc_connector_id != "" ? 1 : 0)
+  name    = var.vpc_connector_name
+  project = var.project_id
 }
 
 locals {
-  connector_id = var.vpc_connector_id != "" ? var.vpc_connector_id : (
-    var.vpc_connector_name != "" ? data.google_vpc_access_connector.existing[0].id : ""
-  )
+  connector_id = var.vpc_connector_id != "" ? var.vpc_connector_id : data.google_vpc_access_connector.existing.id
 }
 
 # =============================================================================
