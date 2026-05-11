@@ -91,14 +91,14 @@ resource "google_cloud_run_v2_job" "vpc_job" {
           }
         }
 
-        # Secrets from Secret Manager
-        dynamic "secret" {
+        # Secrets from Secret Manager (uses env block with value_source)
+        dynamic "env" {
           for_each = var.secrets
           content {
-            name = secret.key
+            name = env.key
             value_source {
               secret_manager_secret {
-                secret  = secret.value
+                secret  = env.value
                 version = "latest"
               }
             }
