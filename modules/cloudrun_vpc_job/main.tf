@@ -92,7 +92,7 @@ resource "google_cloud_run_v2_job" "vpc_job" {
         }
 
         # Secrets from Secret Manager
-        dynamic "env" {
+        dynamic "secret" {
           for_each = var.secrets
           content {
             name = secret.key
