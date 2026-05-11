@@ -11,9 +11,6 @@ on:
 permissions:
   contents: write
 
-env:
-  GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -26,8 +23,8 @@ jobs:
 
       - name: Release
         uses: docker://semantic-release/semantic-release:latest
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          args: semantic-release
 
   validate:
     runs-on: ubuntu-latest
@@ -40,7 +37,5 @@ jobs:
 
       - name: Validate
         uses: docker://semantic-release/semantic-release:latest
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        entrypoint: /bin/bash
-        command: -c "npx --no -- semantic-release --dry-run --no-ci"
+        with:
+          args: semantic-release --dry-run --no-ci
