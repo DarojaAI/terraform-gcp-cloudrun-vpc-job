@@ -63,47 +63,51 @@ resource "google_cloud_run_v2_job" "vpc_job" {
   labels   = var.labels
 
   template {
-    task_count      = var.task_count
-    timeout         = var.timeout_seconds
-    service_account = google_service_account.job_sa.email
+    task_count = var.task_count
+    timeout    = "${var.timeout_seconds}s"
 
     annotations = {
       "run.googleapis.com/vpc-access-connector" = local.connector_id
-      "run.googleapis.com/vpc-access-egress"   = var.vpc_egress
+      "run.googleapis.com/vpc-access-egress"    = var.vpc_egress
     }
 
-    containers {
-      image = var.image
-      name  = var.name
+    # Nested template for container execution
+    template {
+      service_account = google_service_account.job_sa.email
 
-      command = var.command
-      args    = var.args
+      containers {
+        image = var.image
+        name  = var.name
 
-      # Environment variables
-      dynamic "env" {
-        for_each = var.env
-        content {
-          name  = env.key
-          value = env.value
+        command = var.command
+        args    = var.args
+
+        # Environment variables
+        dynamic "env" {
+          for_each = var.env
+          content {
+            name  = env.key
+            value = env.value
+          }
         }
-      }
 
-      # Secrets from Secret Manager
-      dynamic "env" {
-        for_each = var.secrets
-        content {
-          name = secret.key
-          value_source {
-            secret_manager_secret {
-              secret  = secret.value
-              version = "latest"
+        # Secrets from Secret Manager
+        dynamic "env" {
+          for_each = var.secrets
+          content {
+            name = secret.key
+            value_source {
+              secret_manager_secret {
+                secret  = secret.value
+                version = "latest"
+              }
             }
           }
         }
-      }
 
-      resources {
-        limits = var.resources
+        resources {
+          limits = var.resources
+        }
       }
     }
   }
