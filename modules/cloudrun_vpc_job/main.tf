@@ -50,75 +50,53 @@ resource "google_cloud_run_v2_job" "vpc_job" {
   location = var.location
   labels   = var.labels
 
-  # Retry configuration
-  conditions = var.conditions
-
   template {
-    parallelism = var.parallelism
     task_count  = var.task_count
     timeout     = "${var.timeout_seconds}s"
+    service_account = google_service_account.job_sa.email
 
-    template {
-      # Direct VPC Egress - no connector required for jobs
-      vpc_access {
-        egress      = var.vpc_egress
-        network     = var.vpc_network
-        subnetwork  = var.vpc_subnet
-        # Note: Egress uses subnetwork's secondary range for service networking
+    # Direct VPC Egress - no connector required for jobs
+    vpc_access {
+      egress      = var.vpc_egress
+      network     = var.vpc_network
+      subnetwork  = var.vpc_subnet
+    }
+
+    containers {
+      image = var.image
+      name  = var.name
+
+      # Command and args as simple lists (not dynamic blocks)
+      command = length(var.command) > 0 ? var.command : []
+      args    = length(var.args) > 0 ? var.args : []
+
+      # Environment variables
+      dynamic "env" {
+        for_each = var.env
+        content {
+          name  = env.key
+          value = env.value
+        }
       }
 
-      containers {
-        image = var.image
-        name  = var.name
-
-        # Environment variables
-        dynamic "env" {
-          for_each = var.env
-          content {
-            name  = env.key
-            value = env.value
-          }
-        }
-
-        # Secrets from Secret Manager
-        dynamic "env" {
-          for_each = var.secrets
-          content {
-            name = secret.key
-            value_source {
-              secret_manager_secret {
-                secret = secret.value
-                version = "latest"
-              }
+      # Secrets from Secret Manager
+      dynamic "env" {
+        for_each = var.secrets
+        content {
+          name = secret.key
+          value_source {
+            secret_manager_secret {
+              secret = secret.value
+              version = "latest"
             }
           }
         }
-
-        # Startup command override
-        dynamic "command" {
-          for_each = length(var.command) > 0 ? [var.command] : []
-          content {
-            command = command.value
-          }
-        }
-
-        # Startup args override
-        dynamic "args" {
-          for_each = length(var.args) > 0 ? [var.args] : []
-          content {
-            args = args.value
-          }
-        }
-
-        # Resource limits
-        resources {
-          limits = var.resources
-          cpu_idle = var.cpu_idle
-        }
       }
 
-      # Service account for execution
-      service_account = google_service_account.job_sa.email
+      # Resource limits
+      resources {
+        limits = var.resources
+      }
     }
   }
 
