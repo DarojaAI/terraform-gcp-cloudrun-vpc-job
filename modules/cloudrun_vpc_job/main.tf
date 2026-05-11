@@ -17,8 +17,12 @@ terraform {
 }
 
 # =============================================================================
-# Data: Lookup existing VPC and Subnet
+# Data: Lookup existing VPC, Subnet, and Project Number
 # =============================================================================
+
+data "google_project" "project" {
+  project_id = var.project_id
+}
 
 data "google_compute_network" "vpc" {
   name    = var.vpc_name
@@ -132,7 +136,7 @@ resource "google_cloud_run_v2_job_iam_member" "github_actions_execute" {
   location = google_cloud_run_v2_job.vpc_job.location
   name     = google_cloud_run_v2_job.vpc_job.name
   role     = "roles/run.invoker"
-  member   = "principalSet:iam.googleapis.com/projects/${var.project_id}/locations/global/workloadIdentityPools/${var.github_wif_pool}/subject/repo:${each.value}"
+  member   = "principalSet:iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.github_wif_pool}/subject/repo:${each.value}"
 }
 
 # =============================================================================
