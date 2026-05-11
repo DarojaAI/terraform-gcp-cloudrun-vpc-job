@@ -64,7 +64,6 @@ resource "google_cloud_run_v2_job" "vpc_job" {
 
   template {
     task_count = var.task_count
-    timeout    = "${var.timeout_seconds}s"
 
     annotations = {
       "run.googleapis.com/vpc-access-connector" = local.connector_id
@@ -73,7 +72,8 @@ resource "google_cloud_run_v2_job" "vpc_job" {
 
     # Nested template for container execution
     template {
-      service_account = google_service_account.job_sa.email
+      timeout          = "${var.timeout_seconds}s"
+      service_account  = google_service_account.job_sa.email
 
       containers {
         image = var.image
