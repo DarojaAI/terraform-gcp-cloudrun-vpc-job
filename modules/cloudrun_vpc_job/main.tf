@@ -1,7 +1,7 @@
 # =============================================================================
 # GCP Cloud Run VPC Job Module
 # =============================================================================
-# Creates a Cloud Run v2 Job with VPC access.
+# Creates a Cloud Run v2 Job with VPC access using existing connector.
 # Enables tasks to run inside a VPC from GitHub Actions without Cloud SQL Proxy.
 # =============================================================================
 
@@ -17,13 +17,31 @@ terraform {
 }
 
 # =============================================================================
+# Data: Lookup existing VPC Access Connector
+# =============================================================================
+
+data "google_vpc_access_connector" "existing" {
+  name     = var.vpc_connector_name != "" ? var.vpc_connector_name : basename(var.vpc_connector_id)
+  project  = var.project_id
+  location = var.location
+
+  # Fallback: derive name from full connector ID
+  count = var.vpc_connector_name != "" ? 1 : (var.vpc_connector_id != "" ? 1 : 0)
+}
+
+locals {
+  connector_id = var.vpc_connector_id != "" ? var.vpc_connector_id : (
+    var.vpc_connector_name != "" ? data.google_vpc_access_connector.existing[0].id : ""
+  )
+}
+
+# =============================================================================
 # Enable Required APIs
 # =============================================================================
 
 resource "google_project_service" "apis" {
   for_each = toset([
     "run.googleapis.com",
-    "cloudresourcemanager.googleapis.com"
   ])
 
   service            = each.value
@@ -41,20 +59,6 @@ resource "google_service_account" "job_sa" {
 }
 
 # =============================================================================
-# VPC Access Connector (Serverless VPC Access)
-# =============================================================================
-
-resource "google_vpc_access_connector" "job_connector" {
-  name          = "${var.name}-vpc-connector"
-  region        = var.location
-  project       = var.project_id
-  ip_cidr_range = var.connector_ip_range
-  network       = var.vpc_network
-
-  depends_on = [google_project_service.apis]
-}
-
-# =============================================================================
 # Cloud Run v2 Job with VPC Access
 # =============================================================================
 
@@ -65,13 +69,13 @@ resource "google_cloud_run_v2_job" "vpc_job" {
   labels   = var.labels
 
   template {
-    task_count = var.task_count
-    timeout    = var.timeout_seconds
+    task_count      = var.task_count
+    timeout         = var.timeout_seconds
     service_account = google_service_account.job_sa.email
 
     annotations = {
-      "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.job_connector.id
-      "run.googleapis.com/vpc-access-egress"     = var.vpc_egress
+      "run.googleapis.com/vpc-access-connector" = local.connector_id
+      "run.googleapis.com/vpc-access-egress"   = var.vpc_egress
     }
 
     containers {
@@ -97,7 +101,7 @@ resource "google_cloud_run_v2_job" "vpc_job" {
           name = secret.key
           value_source {
             secret_manager_secret {
-              secret = secret.value
+              secret  = secret.value
               version = "latest"
             }
           }
@@ -124,7 +128,7 @@ resource "google_cloud_run_v2_job_iam_member" "github_actions_execute" {
   location = google_cloud_run_v2_job.vpc_job.location
   name     = google_cloud_run_v2_job.vpc_job.name
   role     = "roles/run.invoker"
-  member   = "principalSet:iam.googleapis.com/projects/${google_project_service.apis["cloudresourcemanager.googleapis.com"].project}/locations/global/workloadIdentityPools/${var.github_wif_pool}/subject/repo:${each.value}"
+  member   = "principalSet:iam.googleapis.com/projects/${var.project_id}/locations/global/workloadIdentityPools/${var.github_wif_pool}/subject/repo:${each.value}"
 }
 
 # =============================================================================
@@ -134,8 +138,8 @@ resource "google_cloud_run_v2_job_iam_member" "github_actions_execute" {
 resource "google_secret_manager_secret_iam_member" "job_secrets_access" {
   for_each = toset(keys(var.secrets))
 
-  project = var.project_id
+  project   = var.project_id
   secret_id = var.secrets[each.value]
-  role    = "roles/secretmanager.secretAccessor"
-  member   = "serviceAccount:${google_service_account.job_sa.email}"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.job_sa.email}"
 }
