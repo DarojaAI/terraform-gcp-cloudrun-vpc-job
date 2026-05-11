@@ -97,7 +97,7 @@ resource "google_cloud_run_v2_job" "vpc_job" {
           content {
             name = env.key
             value_source {
-              secret_manager_secret {
+              secret_key_ref {
                 secret  = env.value
                 version = "latest"
               }
