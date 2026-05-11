@@ -92,12 +92,6 @@ variable "timeout_seconds" {
   default     = 300
 }
 
-variable "parallelism" {
-  description = "Maximum number of parallel tasks"
-  type        = number
-  default     = 1
-}
-
 variable "task_count" {
   description = "Number of tasks to execute"
   type        = number
@@ -108,12 +102,6 @@ variable "resources" {
   description = "Resource limits (cpu, memory)"
   type        = map(string)
   default     = {}
-}
-
-variable "cpu_idle" {
-  description = "Keep CPU allocated between tasks"
-  type        = bool
-  default     = true
 }
 
 # =============================================================================
@@ -138,12 +126,3 @@ variable "grant_subnet_access" {
   default     = false
 }
 
-# =============================================================================
-# Retry Configuration
-# =============================================================================
-
-variable "conditions" {
-  description = "Job execution conditions"
-  type        = string
-  default     = "ALLOW"
-}
