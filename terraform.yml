@@ -1,0 +1,9 @@
+# Terraform Registry Configuration
+# This file tells Terraform Registry how to process this repository
+
+version: 1
+publishable: true
+
+provider:
+  - name: google
+    url: https://registry.terraform.io/providers/hashicorp/google/latest
