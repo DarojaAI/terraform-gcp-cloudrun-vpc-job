@@ -46,7 +46,7 @@ resource "google_service_account" "job_sa" {
 
 resource "google_vpc_access_connector" "job_connector" {
   name          = "${var.name}-vpc-connector"
-  location      = var.location
+  region        = var.location
   project       = var.project_id
   ip_cidr_range = var.connector_ip_range
   network       = var.vpc_network
