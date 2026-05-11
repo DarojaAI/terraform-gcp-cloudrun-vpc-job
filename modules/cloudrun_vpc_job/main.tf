@@ -48,7 +48,7 @@ resource "google_project_service" "apis" {
 
 resource "google_service_account" "job_sa" {
   project      = var.project_id
-  account_id   = "${var.name}-vpc-job-sa"
+  account_id   = "${var.name}-sa"
   display_name = "Service account for ${var.name} Cloud Run VPC Job"
 }
 
