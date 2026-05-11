@@ -21,10 +21,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Release
-        uses: docker://semantic-release/semantic-release:latest
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          args: semantic-release
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npx semantic-release
 
   validate:
     runs-on: ubuntu-latest
@@ -35,7 +43,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate
-        uses: docker://semantic-release/semantic-release:latest
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          args: semantic-release --dry-run --no-ci
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npx semantic-release --dry-run --no-ci
