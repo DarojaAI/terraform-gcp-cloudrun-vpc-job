@@ -129,14 +129,14 @@ resource "google_cloud_run_v2_job" "vpc_job" {
 # IAM - GitHub Actions Workload Identity Federation
 # =============================================================================
 
+# Grant the WIF service account run.invoker on the job
+# The WIF SA is passed as var.wif_service_account_email
 resource "google_cloud_run_v2_job_iam_member" "github_actions_execute" {
-  for_each = toset(var.allowed_github_repos)
-
   project  = var.project_id
   location = google_cloud_run_v2_job.vpc_job.location
   name     = google_cloud_run_v2_job.vpc_job.name
   role     = "roles/run.invoker"
-  member   = "principalSet:iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.github_wif_pool}/subject/repo:${each.value}"
+  member   = "serviceAccount:${var.wif_service_account_email}"
 }
 
 # =============================================================================

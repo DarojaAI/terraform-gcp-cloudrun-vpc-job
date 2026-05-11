@@ -97,16 +97,9 @@ variable "resources" {
 # IAM Configuration
 # =============================================================================
 
-variable "github_wif_pool" {
-  description = "GitHub Workload Identity Federation pool name"
+variable "wif_service_account_email" {
+  description = "GitHub Actions WIF service account email (e.g., github-actions-deploy@project.iam.gserviceaccount.com)"
   type        = string
-  default     = "DarojaAI-github-actions-pool"
-}
-
-variable "allowed_github_repos" {
-  description = "List of GitHub repos allowed to execute the job (format: owner/repo)"
-  type        = list(string)
-  default     = []
 }
 
 variable "grant_subnet_access" {
