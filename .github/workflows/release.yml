@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Release
+        uses: docker://semantic-release/semantic-release:latest
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  validate:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate
+        uses: docker://semantic-release/semantic-release:latest
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        entrypoint: /bin/bash
+        command: -c "npx --no -- semantic-release --dry-run --no-ci"

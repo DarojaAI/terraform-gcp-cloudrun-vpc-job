@@ -1,0 +1,28 @@
+{
+  "name": "terraform-gcp-cloudrun-vpc-job",
+  "version": "0.0.0-semantically-released",
+  "description": "Terraform module for Google Cloud Run v2 Jobs with direct VPC egress",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DarojaAI/terraform-gcp-cloudrun-vpc-job.git"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release": "^24.0.0"
+  },
+  "release": {
+    "branches": ["master"],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      "@semantic-release/github",
+      "@semantic-release/git",
+      {
+        "path": "@semantic-release/exec",
+        "prepareCmd": "echo ${nextRelease.version} > VERSION"
+      }
+    ]
+  }
+}
