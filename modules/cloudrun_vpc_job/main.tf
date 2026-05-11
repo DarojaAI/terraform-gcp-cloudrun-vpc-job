@@ -1,7 +1,7 @@
 # =============================================================================
 # GCP Cloud Run VPC Job Module
 # =============================================================================
-# Creates a Cloud Run v2 Job with direct VPC egress.
+# Creates a Cloud Run v2 Job with VPC access.
 # Enables tasks to run inside a VPC from GitHub Actions without Cloud SQL Proxy.
 # =============================================================================
 
@@ -41,7 +41,21 @@ resource "google_service_account" "job_sa" {
 }
 
 # =============================================================================
-# Cloud Run v2 Job with Direct VPC Egress
+# VPC Access Connector (Serverless VPC Access)
+# =============================================================================
+
+resource "google_vpc_access_connector" "job_connector" {
+  name          = "${var.name}-vpc-connector"
+  location      = var.location
+  project       = var.project_id
+  ip_cidr_range = var.connector_ip_range
+  network       = var.vpc_network
+
+  depends_on = [google_project_service.apis]
+}
+
+# =============================================================================
+# Cloud Run v2 Job with VPC Access
 # =============================================================================
 
 resource "google_cloud_run_v2_job" "vpc_job" {
@@ -51,24 +65,21 @@ resource "google_cloud_run_v2_job" "vpc_job" {
   labels   = var.labels
 
   template {
-    task_count  = var.task_count
-    timeout     = "${var.timeout_seconds}s"
+    task_count = var.task_count
+    timeout    = var.timeout_seconds
     service_account = google_service_account.job_sa.email
 
-    # Direct VPC Egress - no connector required for jobs
-    vpc_access {
-      egress      = var.vpc_egress
-      network     = var.vpc_network
-      subnetwork  = var.vpc_subnet
+    annotations = {
+      "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.job_connector.id
+      "run.googleapis.com/vpc-access-egress"     = var.vpc_egress
     }
 
     containers {
       image = var.image
       name  = var.name
 
-      # Command and args as simple lists (not dynamic blocks)
-      command = length(var.command) > 0 ? var.command : []
-      args    = length(var.args) > 0 ? var.args : []
+      command = var.command
+      args    = var.args
 
       # Environment variables
       dynamic "env" {
@@ -93,7 +104,6 @@ resource "google_cloud_run_v2_job" "vpc_job" {
         }
       }
 
-      # Resource limits
       resources {
         limits = var.resources
       }
@@ -128,15 +138,4 @@ resource "google_secret_manager_secret_iam_member" "job_secrets_access" {
   secret_id = var.secrets[each.value]
   role    = "roles/secretmanager.secretAccessor"
   member   = "serviceAccount:${google_service_account.job_sa.email}"
-}
-
-# =============================================================================
-# Optional: VPC subnet IAM for job service account
-# =============================================================================
-
-resource "google_compute_subnetwork_iam_member" "job_vpc_access" {
-  count      = var.grant_subnet_access ? 1 : 0
-  subnetwork = var.vpc_subnet
-  role       = "roles/compute.networkUser"
-  member     = "serviceAccount:${google_service_account.job_sa.email}"
 }

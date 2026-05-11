@@ -38,15 +38,16 @@ variable "vpc_subnet" {
   type        = string
 }
 
-variable "vpc_egress" {
-  description = "VPC egress mode: PRIVATE_RANGES_ONLY or ALL_TRAFFIC"
+variable "connector_ip_range" {
+  description = "IP range for VPC Access Connector (must be /28)"
   type        = string
-  default     = "PRIVATE_RANGES_ONLY"
+  default     = "10.8.1.0/28"
+}
 
-  validation {
-    condition     = contains(["PRIVATE_RANGES_ONLY", "ALL_TRAFFIC"], var.vpc_egress)
-    error_message = "vpc_egress must be PRIVATE_RANGES_ONLY or ALL_TRAFFIC"
-  }
+variable "vpc_egress" {
+  description = "VPC egress mode for annotation: private-ranges-only or all-traffic"
+  type        = string
+  default     = "private-ranges-only"
 }
 
 # =============================================================================
