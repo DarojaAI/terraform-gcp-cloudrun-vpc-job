@@ -63,10 +63,11 @@ resource "google_service_account" "job_sa" {
 # =============================================================================
 
 resource "google_cloud_run_v2_job" "vpc_job" {
-  project  = var.project_id
-  name     = var.name
-  location = var.location
-  labels   = var.labels
+  project            = var.project_id
+  name               = var.name
+  location           = var.location
+  labels             = var.labels
+  deletion_protection = false
 
   template {
     task_count = var.task_count
