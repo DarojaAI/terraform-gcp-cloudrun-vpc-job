@@ -153,16 +153,13 @@ resource "google_secret_manager_secret_iam_member" "job_secrets_access" {
 }
 
 # Also add SA to existing postgres password secret if referenced
-data "google_secret_manager_secret" "postgres_password" {
-  count = var.secrets["POSTGRES_PASSWORD"] != "" ? 1 : 0
-  project = var.project_id
-  secret_id = var.secrets["POSTGRES_PASSWORD"]
-}
-
+# NOTE: We reference the secret by name directly instead of using a data source.
+# data source evaluation during plan (including destroy) fails if the secret
+# doesn't exist yet, causing terraform destroy to abort.
 resource "google_secret_manager_secret_iam_member" "job_postgres_password_access" {
   count = var.secrets["POSTGRES_PASSWORD"] != "" ? 1 : 0
   project = var.project_id
-  secret_id = data.google_secret_manager_secret.postgres_password[0].secret_id
+  secret_id = var.secrets["POSTGRES_PASSWORD"]
   role = "roles/secretmanager.secretAccessor"
   member = "serviceAccount:${google_service_account.job_sa.email}"
 }
