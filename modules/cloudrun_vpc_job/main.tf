@@ -123,7 +123,12 @@ resource "google_cloud_run_v2_job" "vpc_job" {
     }
   }
 
-  depends_on = [google_project_service.apis]
+
+  depends_on = [
+    google_project_service.apis,
+    google_secret_manager_secret_iam_member.job_secrets_access,
+    google_secret_manager_secret_iam_member.job_postgres_password_access,
+  ]
 }
 
 # =============================================================================
